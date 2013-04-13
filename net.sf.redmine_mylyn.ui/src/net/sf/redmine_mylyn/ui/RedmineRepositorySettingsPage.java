@@ -93,6 +93,12 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		} else {
 			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
 		}
+		if (useVersionXml()) {
+			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML, versionXmlText.getText());
+		}
+		else {
+			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+		}
 		
 		if (redmineExtensions!=null) {
 			for (Entry<String, Button> entry : redmineExtensions.entrySet()) {
@@ -102,6 +108,10 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		
 	}
 	
+	private boolean useVersionXml() {
+		return versionXmlEnableButton!=null && versionXmlEnableButton.getSelection();
+	}
+
 	@Override
 	protected Validator getValidator(final TaskRepository repository) {
 		return new Validator() {
@@ -180,7 +190,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		apiKeyEnableButton = apiKeyLtb.button;
 		apiKeyLabel = apiKeyLtb.label;
 		
-		LabelTextButton versionXmlLtb = setupLabelTextButtonControl(parent,Messages.LBL_VERSIONXML,apiKey,apiKeyEnableButton);
+		LabelTextButton versionXmlLtb = setupLabelTextButtonControl(parent,Messages.LBL_VERSIONXML,versionXml,apiKeyEnableButton);
 		versionXmlLabel = versionXmlLtb.label;
 		versionXmlText = versionXmlLtb.text;
 		versionXmlEnableButton = versionXmlLtb.button;

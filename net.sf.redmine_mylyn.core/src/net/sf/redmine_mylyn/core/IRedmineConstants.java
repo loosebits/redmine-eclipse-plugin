@@ -36,6 +36,8 @@ public interface IRedmineConstants {
 	
 	public final static String REPOSITORY_SETTING_API_KEY = "API_KEY"; //$NON-NLS-1$
 	
+	public final static String REPOSITORY_SETTING_VERSION_XML = "VERSION_XML";
+	
 	public final static String BOOLEAN_TRUE_SUBMIT_VALUE  = "1"; //$NON-NLS-1$
 	public final static String BOOLEAN_FALSE_SUBMIT_VALUE  = "0"; //$NON-NLS-1$
 	

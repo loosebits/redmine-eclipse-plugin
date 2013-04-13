@@ -51,6 +51,7 @@ public class Messages extends NLS {
 	public static String INVALID_CREDENTIALS;
 	public static String INVALID_SERVERURL;
 	public static String LBL_APIKEY;
+	public static String LBL_VERSIONXML;
 	public static String LBL_ENABLE;
 	public static String SETTINGS_PAGE_EXAMPLE_URL;
 	public static String SETTINGS_PAGE_TITLE;

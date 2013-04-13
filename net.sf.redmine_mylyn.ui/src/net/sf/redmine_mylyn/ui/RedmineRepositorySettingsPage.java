@@ -30,6 +30,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
@@ -51,6 +52,12 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	private Label apiKeyLabel;
 	
 	private Button apiKeyEnableButton;
+	
+	private Text versionXmlText;
+	
+	private Label versionXmlLabel;
+	
+	private Button versionXmlEnableButton;
 	
 	private HashMap<String, Button> redmineExtensions;
 	
@@ -161,18 +168,43 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	@Override
 	protected void createSettingControls(Composite parent) {
 		super.createSettingControls(parent);
+		String apiKey = null;
+		String versionXml = null;
+		if (repository != null) {
+			//Old values
+			apiKey = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
+			versionXml = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+		}
+		LabelTextButton apiKeyLtb = setupLabelTextButtonControl(parent,Messages.LBL_APIKEY,apiKey,savePasswordButton);
+		apiKeyText = apiKeyLtb.text;
+		apiKeyEnableButton = apiKeyLtb.button;
+		apiKeyLabel = apiKeyLtb.label;
 		
-		//oldApiKey
-		String apiKey = repository==null ? null : repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
-		boolean useApiKey = apiKey!=null && !apiKey.isEmpty();
+		LabelTextButton versionXmlLtb = setupLabelTextButtonControl(parent,Messages.LBL_VERSIONXML,apiKey,apiKeyEnableButton);
+		versionXmlLabel = versionXmlLtb.label;
+		versionXmlText = versionXmlLtb.text;
+		versionXmlEnableButton = versionXmlLtb.button;
+	}
+	
+	private static class LabelTextButton {
+		public Label label;
+		public Text text;
+		public Button button;
+	}
+
+	private LabelTextButton setupLabelTextButtonControl(Composite parent,String labelValue,
+			String textValue, Control below) {
+		final LabelTextButton ltb = new LabelTextButton();
+		
+		boolean useApiKey = textValue!=null && !textValue.isEmpty();
 
 		//REPOSITORY_SETTING_API_KEY
-		apiKeyLabel = new Label(parent, SWT.NONE);
-		apiKeyLabel.setText(Messages.LBL_APIKEY);
+		ltb.label = new Label(parent, SWT.NONE);
+		ltb.label.setText(labelValue);
 
-		apiKeyText = new Text(parent, SWT.BORDER);
-		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		apiKeyText.addModifyListener(new ModifyListener() {
+		ltb.text = new Text(parent, SWT.BORDER);
+		ltb.text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		ltb.text.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
 				isPageComplete();
@@ -180,25 +212,27 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			}
 		});
 		
-		if(apiKey!=null) {
-			apiKeyText.setText(apiKey);
+		if(textValue!=null) {
+			ltb.text.setText(textValue);
 		}
 		
-		apiKeyEnableButton = new Button(parent, SWT.CHECK);
-		apiKeyEnableButton.setText(Messages.LBL_ENABLE);
-		apiKeyEnableButton.addSelectionListener(new SelectionAdapter() {
+		ltb.button = new Button(parent, SWT.CHECK);
+		ltb.button.setText(Messages.LBL_ENABLE);
+		ltb.button.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				setApiKeyUsage(apiKeyEnableButton.getSelection());
+				setUseValue(ltb,ltb.button.getSelection());
 				isPageComplete();
 			}
 		});
 		
-		apiKeyLabel.moveBelow(savePasswordButton);
-		apiKeyText.moveBelow(apiKeyLabel);
-		apiKeyEnableButton.moveBelow(apiKeyText);
+		ltb.label.moveBelow(below);
+		ltb.text.moveBelow(ltb.label);
+		ltb.button.moveBelow(ltb.text);
 		
-		setApiKeyUsage(useApiKey);
+		setUseValue(ltb,useApiKey);
+		return ltb;
+		
 	}
 
 	@Override
@@ -283,14 +317,14 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		}
 	}
 
-	private void setApiKeyUsage(boolean use) {
-		Composite parent = apiKeyEnableButton.getParent();
+	private void setUseValue(LabelTextButton ltb,boolean use) {
+		Composite parent = ltb.button.getParent();
 		
 		repositoryUserNameEditor.setEnabled(!use, parent);
 		repositoryPasswordEditor.setEnabled(!use, parent);
 		
-		apiKeyEnableButton.setSelection(use);
-		apiKeyText.setEnabled(use);
+		ltb.button.setSelection(use);
+		ltb.text.setEnabled(use);
 		
 	}
 

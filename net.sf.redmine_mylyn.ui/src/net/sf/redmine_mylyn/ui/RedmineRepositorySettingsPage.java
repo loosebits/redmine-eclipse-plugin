@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Resources;
+
 import net.sf.redmine_mylyn.api.client.RedmineServerVersion;
 import net.sf.redmine_mylyn.api.client.RedmineServerVersion.Release;
 import net.sf.redmine_mylyn.api.exception.RedmineApiAuthenticationException;
@@ -15,14 +17,19 @@ import net.sf.redmine_mylyn.core.client.ClientFactory;
 import net.sf.redmine_mylyn.core.client.IClient;
 import net.sf.redmine_mylyn.internal.ui.Messages;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.mylyn.tasks.core.TaskRepository;
 import org.eclipse.mylyn.tasks.ui.wizards.AbstractRepositorySettingsPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -33,6 +40,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.ResourceSelectionDialog;
 
 
 public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPage {
@@ -176,7 +184,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	}
 
 	@Override
-	protected void createSettingControls(Composite parent) {
+	protected void createSettingControls(final Composite parent) {
 		super.createSettingControls(parent);
 		String apiKey = null;
 		String versionXml = null;
@@ -194,6 +202,26 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		versionXmlLabel = versionXmlLtb.label;
 		versionXmlText = versionXmlLtb.text;
 		versionXmlEnableButton = versionXmlLtb.button;
+		versionXmlText.addFocusListener(new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void focusGained(FocusEvent arg0) {
+				
+				ResourceSelectionDialog dialog = new ResourceSelectionDialog(parent.getShell(), ResourcesPlugin.getWorkspace().getRoot(), "Select the version xml file");
+				if (dialog.open() == Window.OK) {
+					Object[] result = dialog.getResult();
+					IResource file = (IResource) result[0];
+					versionXmlText.setText(file.getFullPath().makeAbsolute().toFile().getAbsolutePath());
+				}
+				
+			}
+		});
 	}
 	
 	private static class LabelTextButton {

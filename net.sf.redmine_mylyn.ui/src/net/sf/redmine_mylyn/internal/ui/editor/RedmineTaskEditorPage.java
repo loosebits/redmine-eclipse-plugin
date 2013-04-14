@@ -1,5 +1,6 @@
 package net.sf.redmine_mylyn.internal.ui.editor;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -7,6 +8,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 
 import net.sf.redmine_mylyn.api.model.Configuration;
 import net.sf.redmine_mylyn.api.model.CustomField;
@@ -28,6 +36,8 @@ import net.sf.redmine_mylyn.ui.RedmineUiPlugin;
 
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.dialogs.IMessageProvider;
 import org.eclipse.mylyn.commons.core.StatusHandler;
 import org.eclipse.mylyn.tasks.core.data.TaskAttribute;
@@ -53,6 +63,8 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 public class RedmineTaskEditorPage extends AbstractTaskEditorPage {
 
@@ -71,6 +83,46 @@ public class RedmineTaskEditorPage extends AbstractTaskEditorPage {
 //	
 	private Configuration cfg;
 	
+	@Override
+	public void fillToolBar(IToolBarManager toolBarManager) {
+		// TODO Auto-generated method stub
+		super.fillToolBar(toolBarManager);
+		
+		toolBarManager.add(new UpdateXmlAction());
+	}
+	
+	private class UpdateXmlAction extends Action {
+		private String xmlFile;
+		
+		@Override
+		public void run() {
+			try {
+				
+				DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+				File f = new File(xmlFile);
+				Document doc = db.parse(f);
+				Element change = doc.createElement("Change");
+				change.appendChild(doc.createTextNode("Hi"));
+				doc.getDocumentElement().appendChild(change);
+				TransformerFactory tf = TransformerFactory.newInstance();
+				Transformer t = tf.newTransformer();
+				DOMSource src = new DOMSource(doc);
+				StreamResult res = new StreamResult(f);
+				t.transform(src, res);
+			}
+			catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+
+		public UpdateXmlAction() {
+			super("Modify version XML");
+			xmlFile = RedmineTaskEditorPage.this.getTaskRepository().getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+			setEnabled(xmlFile != null);
+		}
+		
+	}
+
 	Map<TaskAttribute, AbstractAttributeEditor> attributeEditors = new HashMap<TaskAttribute, AbstractAttributeEditor>();
 
 	Map<String, CustomField> customFields = new HashMap<String, CustomField>();

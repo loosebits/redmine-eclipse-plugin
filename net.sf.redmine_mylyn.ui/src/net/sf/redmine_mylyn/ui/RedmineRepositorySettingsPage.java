@@ -18,6 +18,7 @@ import net.sf.redmine_mylyn.core.client.IClient;
 import net.sf.redmine_mylyn.internal.ui.Messages;
 
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -68,6 +69,8 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	private Button versionXmlEnableButton;
 	
 	private HashMap<String, Button> redmineExtensions;
+
+	private Text committerText;	
 	
 	public RedmineRepositorySettingsPage(TaskRepository taskRepository) {
 		
@@ -104,10 +107,12 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		if (useVersionXml()) {
 			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML, versionXmlText.getText());
 			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH, versionXmlFile.getLocation().toPortableString());
+			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_COMMITTER,committerText.getText());
 		}
 		else {
 			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
 			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH);
+			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_COMMITTER);
 		}
 		
 		if (redmineExtensions!=null) {
@@ -190,10 +195,17 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		super.createSettingControls(parent);
 		String apiKey = null;
 		String versionXml = null;
+		String committer = null;
 		if (repository != null) {
 			//Old values
 			apiKey = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
 			versionXml = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+			committer = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_COMMITTER);
+		}
+		if (committer == null)
+			committer = "";
+		if (versionXml != null) {
+			versionXmlFile = ResourcesPlugin.getWorkspace().getRoot().findMember(versionXml);
 		}
 		boolean useApiKey = apiKey != null && !apiKey.isEmpty();
 		apiKeyLabel = new Label(parent, SWT.NONE);
@@ -246,12 +258,20 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			}
 			
 		});
+		Label committerLabel = new Label(parent,SWT.NONE);
+		committerLabel.setText("Committer name");
+		committerText = new Text(parent,SWT.BORDER);
+		committerText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		committerText.setText(committer);
+		
 		apiKeyLabel.moveBelow(savePasswordButton);
 		apiKeyText.moveBelow(apiKeyLabel);
 		apiKeyEnableButton.moveBelow(apiKeyText);
 		versionXmlLabel.moveBelow(apiKeyEnableButton);
 		versionXmlText.moveBelow(versionXmlLabel);
 		versionXmlBrowseButton.moveBelow(versionXmlText);
+		committerLabel.moveBelow(versionXmlBrowseButton);
+		committerText.moveBelow(committerLabel);
 		
 	}
 

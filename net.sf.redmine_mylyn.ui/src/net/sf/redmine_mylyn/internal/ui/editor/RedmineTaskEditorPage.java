@@ -106,9 +106,15 @@ public class RedmineTaskEditorPage extends AbstractTaskEditorPage {
 				File f = new File(xmlFile);
 				Document doc = db.parse(f);
 				Element change = doc.createElement("Change");
-				Attr title = doc.createAttribute("title");
+				Attr title = doc.createAttribute("Title");
 				title.setValue(rootAttribute.getAttribute(RedmineAttribute.SUMMARY.getTaskKey()).getValue());
+				Attr comments = doc.createAttribute("Comments");
+				comments.setValue(RedmineTaskEditorPage.this.getTaskRepository().getProperty(IRedmineConstants.REPOSITORY_SETTING_COMMITTER));
+				Attr taskId = doc.createAttribute("CQ");
+				taskId.setValue("rm-" + rootAttribute.getTaskData().getTaskId());
+				change.setAttributeNode(comments);
 				change.setAttributeNode(title);
+				change.setAttributeNode(taskId);
 				doc.getDocumentElement().appendChild(change);
 				TransformerFactory tf = TransformerFactory.newInstance();
 				Transformer t = tf.newTransformer();

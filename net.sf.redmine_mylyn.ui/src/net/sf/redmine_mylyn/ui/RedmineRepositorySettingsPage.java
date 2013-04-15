@@ -15,11 +15,14 @@ import net.sf.redmine_mylyn.core.client.ClientFactory;
 import net.sf.redmine_mylyn.core.client.IClient;
 import net.sf.redmine_mylyn.internal.ui.Messages;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.mylyn.tasks.core.TaskRepository;
 import org.eclipse.mylyn.tasks.ui.wizards.AbstractRepositorySettingsPage;
 import org.eclipse.swt.SWT;
@@ -32,6 +35,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.ResourceListSelectionDialog;
 
 
 public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPage {
@@ -193,12 +197,36 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 				isPageComplete();
 			}
 		});
-		
+		setApiKeyUsage(useApiKey);
+		Label versionXmlLabel = new Label(parent,SWT.NONE);
+		versionXmlLabel.setText("Version Latest Changes file");		
+		final Text versionXmlText = new Text(parent,SWT.BORDER);
+		versionXmlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		versionXmlText.setEditable(false);		
+		Button versionXmlBrowseButton = new Button(parent,SWT.PUSH);
+		versionXmlBrowseButton.setText("Browse..");
+		versionXmlBrowseButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				ResourceListSelectionDialog dialog = new ResourceListSelectionDialog(getShell(), ResourcesPlugin.getWorkspace().getRoot(), IResource.DEPTH_INFINITE | IResource.FILE);
+				
+				if (dialog.open() == Window.OK) {
+					IResource r = (IResource) dialog.getResult()[0];
+					versionXmlText.setText(r.getFullPath().toOSString());
+				}
+			}
+			
+		});
 		apiKeyLabel.moveBelow(savePasswordButton);
 		apiKeyText.moveBelow(apiKeyLabel);
 		apiKeyEnableButton.moveBelow(apiKeyText);
+		versionXmlLabel.moveBelow(apiKeyEnableButton);
+		versionXmlText.moveBelow(versionXmlLabel);
+		versionXmlBrowseButton.moveBelow(versionXmlText);
 		
-		setApiKeyUsage(useApiKey);
+		
+		
+		
 	}
 
 	@Override

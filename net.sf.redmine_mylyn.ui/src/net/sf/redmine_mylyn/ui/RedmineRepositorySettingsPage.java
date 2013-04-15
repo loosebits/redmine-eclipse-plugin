@@ -40,7 +40,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.dialogs.ResourceSelectionDialog;
+import org.eclipse.ui.dialogs.ResourceListSelectionDialog;
 
 
 public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPage {
@@ -63,7 +63,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	
 	private Text versionXmlText;
 	
-	private Label versionXmlLabel;
+	private IResource versionXmlFile;
 	
 	private Button versionXmlEnableButton;
 	
@@ -103,9 +103,11 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		}
 		if (useVersionXml()) {
 			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML, versionXmlText.getText());
+			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH, versionXmlFile.getLocation().toPortableString());
 		}
 		else {
 			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH);
 		}
 		
 		if (redmineExtensions!=null) {
@@ -193,56 +195,13 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			apiKey = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
 			versionXml = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
 		}
-		LabelTextButton apiKeyLtb = setupLabelTextButtonControl(parent,Messages.LBL_APIKEY,apiKey,savePasswordButton);
-		apiKeyText = apiKeyLtb.text;
-		apiKeyEnableButton = apiKeyLtb.button;
-		apiKeyLabel = apiKeyLtb.label;
-		
-		LabelTextButton versionXmlLtb = setupLabelTextButtonControl(parent,Messages.LBL_VERSIONXML,versionXml,apiKeyEnableButton);
-		versionXmlLabel = versionXmlLtb.label;
-		versionXmlText = versionXmlLtb.text;
-		versionXmlEnableButton = versionXmlLtb.button;
-		versionXmlText.addFocusListener(new FocusListener() {
-			
-			@Override
-			public void focusLost(FocusEvent arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void focusGained(FocusEvent arg0) {
-				
-				ResourceSelectionDialog dialog = new ResourceSelectionDialog(parent.getShell(), ResourcesPlugin.getWorkspace().getRoot(), "Select the version xml file");
-				if (dialog.open() == Window.OK) {
-					Object[] result = dialog.getResult();
-					IResource file = (IResource) result[0];
-					versionXmlText.setText(file.getFullPath().makeAbsolute().toFile().getAbsolutePath());
-				}
-				
-			}
-		});
-	}
-	
-	private static class LabelTextButton {
-		public Label label;
-		public Text text;
-		public Button button;
-	}
+		boolean useApiKey = apiKey != null && !apiKey.isEmpty();
+		apiKeyLabel = new Label(parent, SWT.NONE);
+		apiKeyLabel.setText(Messages.LBL_APIKEY);
 
-	private LabelTextButton setupLabelTextButtonControl(Composite parent,String labelValue,
-			String textValue, Control below) {
-		final LabelTextButton ltb = new LabelTextButton();
-		
-		boolean useApiKey = textValue!=null && !textValue.isEmpty();
-
-		//REPOSITORY_SETTING_API_KEY
-		ltb.label = new Label(parent, SWT.NONE);
-		ltb.label.setText(labelValue);
-
-		ltb.text = new Text(parent, SWT.BORDER);
-		ltb.text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		ltb.text.addModifyListener(new ModifyListener() {
+		apiKeyText = new Text(parent, SWT.BORDER);
+		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		apiKeyText.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
 				isPageComplete();
@@ -250,26 +209,49 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			}
 		});
 		
-		if(textValue!=null) {
-			ltb.text.setText(textValue);
+		if(apiKey!=null) {
+			apiKeyText.setText(apiKey);
 		}
 		
-		ltb.button = new Button(parent, SWT.CHECK);
-		ltb.button.setText(Messages.LBL_ENABLE);
-		ltb.button.addSelectionListener(new SelectionAdapter() {
+		apiKeyEnableButton = new Button(parent, SWT.CHECK);
+		apiKeyEnableButton.setText(Messages.LBL_ENABLE);
+		apiKeyEnableButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				setUseValue(ltb,ltb.button.getSelection());
+				setApiKeyUsage(apiKeyEnableButton.getSelection());
 				isPageComplete();
 			}
 		});
-		
-		ltb.label.moveBelow(below);
-		ltb.text.moveBelow(ltb.label);
-		ltb.button.moveBelow(ltb.text);
-		
-		setUseValue(ltb,useApiKey);
-		return ltb;
+		setApiKeyUsage(useApiKey);
+		Label versionXmlLabel = new Label(parent,SWT.NONE);
+		versionXmlLabel.setText("Version Latest Changes file");		
+		final Text versionXmlText = new Text(parent,SWT.BORDER);
+		versionXmlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		versionXmlText.setEditable(false);	
+		if (versionXml != null) {
+			versionXmlText.setText(versionXml);
+		}
+		Button versionXmlBrowseButton = new Button(parent,SWT.PUSH);
+		versionXmlBrowseButton.setText("Browse..");
+		versionXmlBrowseButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				ResourceListSelectionDialog dialog = new ResourceListSelectionDialog(getShell(), ResourcesPlugin.getWorkspace().getRoot(), IResource.DEPTH_INFINITE | IResource.FILE);
+				
+				if (dialog.open() == Window.OK) {
+					versionXmlFile = (IResource) dialog.getResult()[0];
+					versionXmlText.setText(versionXmlFile.getFullPath().toOSString());
+					
+				}
+			}
+			
+		});
+		apiKeyLabel.moveBelow(savePasswordButton);
+		apiKeyText.moveBelow(apiKeyLabel);
+		apiKeyEnableButton.moveBelow(apiKeyText);
+		versionXmlLabel.moveBelow(apiKeyEnableButton);
+		versionXmlText.moveBelow(versionXmlLabel);
+		versionXmlBrowseButton.moveBelow(versionXmlText);
 		
 	}
 
@@ -355,14 +337,14 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		}
 	}
 
-	private void setUseValue(LabelTextButton ltb,boolean use) {
-		Composite parent = ltb.button.getParent();
+	private void setApiKeyUsage(boolean use) {
+		Composite parent = apiKeyEnableButton.getParent();
 		
 		repositoryUserNameEditor.setEnabled(!use, parent);
 		repositoryPasswordEditor.setEnabled(!use, parent);
 		
-		ltb.button.setSelection(use);
-		ltb.text.setEnabled(use);
+		apiKeyEnableButton.setSelection(use);
+		apiKeyText.setEnabled(use);
 		
 	}
 

@@ -11,6 +11,7 @@ import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -39,6 +40,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.mylyn.commons.core.StatusHandler;
 import org.eclipse.mylyn.tasks.core.data.TaskAttribute;
 import org.eclipse.mylyn.tasks.core.data.TaskDataModel;
@@ -58,11 +60,13 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.CCombo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -97,21 +101,27 @@ public class RedmineTaskEditorPage extends AbstractTaskEditorPage {
 		@Override
 		public void run() {
 			try {
-				
+				TaskAttribute rootAttribute = getModel().getTaskData().getRoot();
 				DocumentBuilder db = DocumentBuilderFactory.newInstance().newDocumentBuilder();
 				File f = new File(xmlFile);
 				Document doc = db.parse(f);
 				Element change = doc.createElement("Change");
-				change.appendChild(doc.createTextNode("Hi"));
+				Attr title = doc.createAttribute("title");
+				title.setValue(rootAttribute.getAttribute(RedmineAttribute.SUMMARY.getTaskKey()).getValue());
+				change.setAttributeNode(title);
 				doc.getDocumentElement().appendChild(change);
 				TransformerFactory tf = TransformerFactory.newInstance();
 				Transformer t = tf.newTransformer();
+				t.setOutputProperty(OutputKeys.INDENT, "yes");
+				t.setOutputProperty(OutputKeys.METHOD, "xml");
+				t.setOutputProperty("{http://xml.apache.org/xslt}indent-amount","4");
+				
 				DOMSource src = new DOMSource(doc);
 				StreamResult res = new StreamResult(f);
 				t.transform(src, res);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
+				MessageDialog.openError(Display.getDefault().getActiveShell(), "Error parsing/generating xml", e.toString() + "\n" +e.getMessage());
 			}
 		}
 

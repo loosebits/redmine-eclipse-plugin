@@ -117,7 +117,7 @@ public class RedmineTaskEditorPage extends AbstractTaskEditorPage {
 
 		public UpdateXmlAction() {
 			super("Modify version XML");
-			xmlFile = RedmineTaskEditorPage.this.getTaskRepository().getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+			xmlFile = RedmineTaskEditorPage.this.getTaskRepository().getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH);
 			setEnabled(xmlFile != null);
 		}
 		

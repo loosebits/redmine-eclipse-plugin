@@ -119,7 +119,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	}
 	
 	private boolean useVersionXml() {
-		return versionXmlEnableButton!=null && versionXmlEnableButton.getSelection();
+		return versionXmlText.getText() != null && !versionXmlText.getText().isEmpty();
 	}
 
 	@Override
@@ -225,7 +225,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		setApiKeyUsage(useApiKey);
 		Label versionXmlLabel = new Label(parent,SWT.NONE);
 		versionXmlLabel.setText("Version Latest Changes file");		
-		final Text versionXmlText = new Text(parent,SWT.BORDER);
+		versionXmlText = new Text(parent,SWT.BORDER);
 		versionXmlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
 		versionXmlText.setEditable(false);	
 		if (versionXml != null) {

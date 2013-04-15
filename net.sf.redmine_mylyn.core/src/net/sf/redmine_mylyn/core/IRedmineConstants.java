@@ -48,5 +48,6 @@ public interface IRedmineConstants {
 	public final static  String DATE_FORMAT = "yyyy-MM-dd"; //$NON-NLS-1$
 	
 	public final static String REDMINE_URL_REVISION = "/repositories/revision/"; //$NON-NLS-N$
+	public static final String REPOSITORY_SETTING_VERSION_XML_FULL_PATH = "VERSION_XML_FULL_PATH";
 
 }

@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import javax.annotation.Resources;
+
 import net.sf.redmine_mylyn.api.client.RedmineServerVersion;
 import net.sf.redmine_mylyn.api.client.RedmineServerVersion.Release;
 import net.sf.redmine_mylyn.api.exception.RedmineApiAuthenticationException;
@@ -15,14 +17,19 @@ import net.sf.redmine_mylyn.core.client.ClientFactory;
 import net.sf.redmine_mylyn.core.client.IClient;
 import net.sf.redmine_mylyn.internal.ui.Messages;
 
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.IMessageProvider;
+import org.eclipse.jface.window.Window;
 import org.eclipse.mylyn.tasks.core.TaskRepository;
 import org.eclipse.mylyn.tasks.ui.wizards.AbstractRepositorySettingsPage;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -33,6 +40,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.ui.dialogs.ResourceListSelectionDialog;
 
 
 public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPage {
@@ -55,7 +63,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	
 	private Text versionXmlText;
 	
-	private Label versionXmlLabel;
+	private IResource versionXmlFile;
 	
 	private Button versionXmlEnableButton;
 	
@@ -93,6 +101,14 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		} else {
 			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
 		}
+		if (useVersionXml()) {
+			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML, versionXmlText.getText());
+			repository.setProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH, versionXmlFile.getLocation().toPortableString());
+		}
+		else {
+			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
+			repository.removeProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML_FULL_PATH);
+		}
 		
 		if (redmineExtensions!=null) {
 			for (Entry<String, Button> entry : redmineExtensions.entrySet()) {
@@ -102,6 +118,10 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		
 	}
 	
+	private boolean useVersionXml() {
+		return versionXmlText.getText() != null && !versionXmlText.getText().isEmpty();
+	}
+
 	@Override
 	protected Validator getValidator(final TaskRepository repository) {
 		return new Validator() {
@@ -166,7 +186,7 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 	}
 
 	@Override
-	protected void createSettingControls(Composite parent) {
+	protected void createSettingControls(final Composite parent) {
 		super.createSettingControls(parent);
 		String apiKey = null;
 		String versionXml = null;
@@ -175,36 +195,13 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			apiKey = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_API_KEY);
 			versionXml = repository.getProperty(IRedmineConstants.REPOSITORY_SETTING_VERSION_XML);
 		}
-		LabelTextButton apiKeyLtb = setupLabelTextButtonControl(parent,Messages.LBL_APIKEY,apiKey,savePasswordButton);
-		apiKeyText = apiKeyLtb.text;
-		apiKeyEnableButton = apiKeyLtb.button;
-		apiKeyLabel = apiKeyLtb.label;
-		
-		LabelTextButton versionXmlLtb = setupLabelTextButtonControl(parent,Messages.LBL_VERSIONXML,apiKey,apiKeyEnableButton);
-		versionXmlLabel = versionXmlLtb.label;
-		versionXmlText = versionXmlLtb.text;
-		versionXmlEnableButton = versionXmlLtb.button;
-	}
-	
-	private static class LabelTextButton {
-		public Label label;
-		public Text text;
-		public Button button;
-	}
+		boolean useApiKey = apiKey != null && !apiKey.isEmpty();
+		apiKeyLabel = new Label(parent, SWT.NONE);
+		apiKeyLabel.setText(Messages.LBL_APIKEY);
 
-	private LabelTextButton setupLabelTextButtonControl(Composite parent,String labelValue,
-			String textValue, Control below) {
-		final LabelTextButton ltb = new LabelTextButton();
-		
-		boolean useApiKey = textValue!=null && !textValue.isEmpty();
-
-		//REPOSITORY_SETTING_API_KEY
-		ltb.label = new Label(parent, SWT.NONE);
-		ltb.label.setText(labelValue);
-
-		ltb.text = new Text(parent, SWT.BORDER);
-		ltb.text.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		ltb.text.addModifyListener(new ModifyListener() {
+		apiKeyText = new Text(parent, SWT.BORDER);
+		apiKeyText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		apiKeyText.addModifyListener(new ModifyListener() {
 			@Override
 			public void modifyText(ModifyEvent e) {
 				isPageComplete();
@@ -212,26 +209,49 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 			}
 		});
 		
-		if(textValue!=null) {
-			ltb.text.setText(textValue);
+		if(apiKey!=null) {
+			apiKeyText.setText(apiKey);
 		}
 		
-		ltb.button = new Button(parent, SWT.CHECK);
-		ltb.button.setText(Messages.LBL_ENABLE);
-		ltb.button.addSelectionListener(new SelectionAdapter() {
+		apiKeyEnableButton = new Button(parent, SWT.CHECK);
+		apiKeyEnableButton.setText(Messages.LBL_ENABLE);
+		apiKeyEnableButton.addSelectionListener(new SelectionAdapter() {
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				setUseValue(ltb,ltb.button.getSelection());
+				setApiKeyUsage(apiKeyEnableButton.getSelection());
 				isPageComplete();
 			}
 		});
-		
-		ltb.label.moveBelow(below);
-		ltb.text.moveBelow(ltb.label);
-		ltb.button.moveBelow(ltb.text);
-		
-		setUseValue(ltb,useApiKey);
-		return ltb;
+		setApiKeyUsage(useApiKey);
+		Label versionXmlLabel = new Label(parent,SWT.NONE);
+		versionXmlLabel.setText("Version Latest Changes file");		
+		versionXmlText = new Text(parent,SWT.BORDER);
+		versionXmlText.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		versionXmlText.setEditable(false);	
+		if (versionXml != null) {
+			versionXmlText.setText(versionXml);
+		}
+		Button versionXmlBrowseButton = new Button(parent,SWT.PUSH);
+		versionXmlBrowseButton.setText("Browse..");
+		versionXmlBrowseButton.addSelectionListener(new SelectionAdapter() {
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				ResourceListSelectionDialog dialog = new ResourceListSelectionDialog(getShell(), ResourcesPlugin.getWorkspace().getRoot(), IResource.DEPTH_INFINITE | IResource.FILE);
+				
+				if (dialog.open() == Window.OK) {
+					versionXmlFile = (IResource) dialog.getResult()[0];
+					versionXmlText.setText(versionXmlFile.getFullPath().toOSString());
+					
+				}
+			}
+			
+		});
+		apiKeyLabel.moveBelow(savePasswordButton);
+		apiKeyText.moveBelow(apiKeyLabel);
+		apiKeyEnableButton.moveBelow(apiKeyText);
+		versionXmlLabel.moveBelow(apiKeyEnableButton);
+		versionXmlText.moveBelow(versionXmlLabel);
+		versionXmlBrowseButton.moveBelow(versionXmlText);
 		
 	}
 
@@ -317,14 +337,14 @@ public class RedmineRepositorySettingsPage extends AbstractRepositorySettingsPag
 		}
 	}
 
-	private void setUseValue(LabelTextButton ltb,boolean use) {
-		Composite parent = ltb.button.getParent();
+	private void setApiKeyUsage(boolean use) {
+		Composite parent = apiKeyEnableButton.getParent();
 		
 		repositoryUserNameEditor.setEnabled(!use, parent);
 		repositoryPasswordEditor.setEnabled(!use, parent);
 		
-		ltb.button.setSelection(use);
-		ltb.text.setEnabled(use);
+		apiKeyEnableButton.setSelection(use);
+		apiKeyText.setEnabled(use);
 		
 	}
 
